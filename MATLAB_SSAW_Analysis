@@ -1,0 +1,153 @@
+%%
+% Louise Hansen
+% EE 247 Final Projecct
+% SSAW Simulation
+
+%% Variable and Parameter Setup 
+close all; clc; clear all;
+
+% Polystyrene breads
+Pp = 1.05*1000; %g/cm^3 --> kg/m^3
+Bp = 2.46E-10; %Pa^-1
+% DI-Water medium
+Pm = 1.0*1000; %g/cm^3  --> kg/m^3
+Bm = 4.58E-10; %Pa^-1
+
+inputPower = 0.5; %W
+Ps = 4650; %kg/m^3
+Cs = 3997; %m/s
+Aw = 1.04E-5; % working area - distance between IDTS (4000 um x 2600 um)
+a = 0.2; %power conversion efficiency (10-20% efficiency assumed)
+p0 = ((a*inputPower*Ps*Cs)/Aw)^(1/2); %pressure amplitude, p0 = Awc*rho(Pa)
+
+pD = [10E-6, 7E-6, 5E-6, 3E-6]; %m particle diameter
+pV = 4/3 .* pi .* (pD / 2).^3; % particle volume
+
+lamda = 300E-6; %wavelength, 300 um
+k = 2*pi/lamda; % wavenumber/wave vector, k = 2pi/lamda (rad/m)
+
+%% Acoustic radiation forces
+
+%Acoustic Contrast factor
+Or = ((5*Pp - 2*Pm)/(2*Pp + Pm)) - (Bp/Bm);
+Fr = [];
+x = -120E-6:1E-6:120E-6; %distance from a pressure node (max distances away from the center of the 
+for i = x
+    FrX = -(pi*p0^(2)*Bm.*pV*Or*sin(2.*i.*k)) ./ (2*lamda);
+    Fr = [Fr ; FrX];
+end
+
+%plot
+figure(1);   
+xlabel('Distance from Center of Channel', 'FontSize', 26)
+ylabel('Acoustic Radiation Force', 'FontSize', 26)
+    hold on
+    plot(x, Fr(:,1), 'b', 'linewidth', 3);
+    hold on
+    plot(x, Fr(:,2), 'r', 'linewidth', 3);
+    hold on
+    plot(x, Fr(:,3), 'g', 'linewidth', 3);
+    hold on
+    plot(x, Fr(:,4), 'k', 'linewidth', 3);
+    hold on
+legend({'10um', '7um', '5um', '3um'}, 'FontSize', 26, 'Location', 'SouthEast')
+title('Acoustic Radiation Forces within Stage 2','FontSize', 28)
+%% Force balance (Fr = Fd)
+
+neu = 0.001;  %medium viscosity (Pa*s)
+r = pD/2; %particle radius
+%velocity of the particle due to acoustic radiation force
+Ur = [];
+Or = ((5*Pp - 2*Pm)/(2*Pp + Pm)) - (Bp/Bm);
+x = -120E-6:1E-6:120E-6; %distance from a pressure node (max distances away from the center of the 
+for i = x
+    UrX = (pi.*r.^2*p0^2*Bm/(9*lamda*neu))*Or*sin(2*k*i);
+    Ur = [Ur ; UrX];
+end
+figure(2);   
+xlabel('Distance from Center of Channel')
+ylabel('Particle Velocity')
+    hold on
+    plot(x, Ur(:,1), 'b');
+    hold on
+    plot(x, Ur(:,2), 'r');
+    hold on
+    plot(x, Ur(:,3), 'g');
+    hold on
+    plot(x, Ur(:,4), 'k');
+    hold on
+legend('10um', '7um', '5um', '3um')
+
+%% Primary Viscous Force/Drag force
+Fd = [];
+for i=1:4
+    for ii= -120E-6:1E-6:120E-6
+        Fdi = []
+        UrX = (pi.*r.^2*p0^2*Bm/9*lamda*neu)*Or*sin(2*k*ii);
+        Fdii = -6*pi.*neu.*r(i)*UrX(:,i);
+        Fdi = [Fdi Fdii];
+    end
+    Fd = [Fd ; Fdi'];
+end
+FrX = -(pi.*p0^(2).*Bm.*pV.*Or.*sin(2.*k)) ./ (2.*lamda);
+figure(8)
+plot (r, Fd, 'LineWidth', 3)
+title('Magnitude of Fv based on Particle Size','FontSize', 28)
+xlabel('Particle Size (m)', 'FontSize', 26)
+ylabel('Viscous Drag Force (N)', 'FontSize', 26)
+
+%%
+a = 0.2; %power conversion efficiency (10-20% efficiency assumed)
+p0 = ((a*inputPower*Ps*Cs)/Aw)^(1/2); %pressure amplitude, p0 = Awc*rho(Pa)
+
+a2 = 0.4; %power conversion efficiency (10-20% efficiency assumed)
+p02 = ((a*inputPower*Ps*Cs)/Aw)^(1/2); %pressure amplitude, p0 = Awc*rho(Pa)
+
+
+Or = ((5*Pp - 2*Pm)/(2*Pp + Pm)) - (Bp/Bm);
+Fr1 = [];
+Fr2 = [];
+x = -120E-6:1E-6:120E-6; %distance from a pressure node (max distances away from the center of the 
+for i = x
+
+    FrX1 = -(pi*p0^(2)*Bm.*pV*Or*sin(2.*i.*k)) ./ (2*lamda);
+    Fr1 = [Fr1 ; FrX1];
+    
+    FrX2 = -(pi*p02^(2)*Bm.*pV*Or*sin(2.*i.*k)) ./ (2*lamda);
+    Fr2 = [Fr2 ; FrX2];
+end
+
+%plot
+figure(4);   
+xlabel('Distance from Center of Channel', 'FontSize', 26)
+ylabel('Acoustic Radiation Force', 'FontSize', 26)
+    hold on
+    plot(x, Fr1(:,1), 'b', 'linewidth', 3);
+    hold on
+    plot(x, Fr2(:,2), 'r', 'linewidth', 3);
+    hold on
+legend({'10um, a = 20%', '10um, a = 40%'}, 'FontSize', 26, 'Location', 'SouthEast')
+title('Efficiency Dependence of Force','FontSize', 28)
+
+%%
+allTick = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]; %power conversion efficiency (10-20% efficiency assumed)
+Frall = [];
+for all = 0.1:0.1:1
+    p0all = ((all*inputPower*Ps*Cs)/Aw)^(1/2);
+    
+    x = -120E-6:1E-6:120E-6; %distance from a pressure node (max distances away from the center of the 
+    inter = [];
+    for i = x
+        FrXall = -(pi*p0all^(2)*Bm.*(5.235987755982989e-16)*Or*sin(2.*i.*k)) ./ (2*lamda);
+        inter = [inter; FrXall];
+    
+    end
+    Frall = [Frall ; max(inter)];
+end
+
+figure(5);   
+    plot(allTick, Frall, 'b', 'linewidth', 3);
+    hold on
+title('Efficiency Dependence of Force on a 10um Particle','FontSize', 28)
+xlabel('Efficiency Factor', 'FontSize', 26)
+ylabel('Max Acoustic Radiation Force', 'FontSize', 26)
